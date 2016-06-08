@@ -4,6 +4,8 @@ class Fiberpool(T, I)
   @queue : I
   @pool_size : Int32
 
+  getter exceptions : Array(Exception)
+
   def self.new(iterable : Iterable, pool_size = 10)
     new(iterable.each, pool_size)
   end
@@ -13,6 +15,7 @@ class Fiberpool(T, I)
   end
 
   protected def initialize(@queue, @pool_size, dummy)
+    @exceptions = [] of Exception
   end
 
   private def worker(item : T, &block : T -> Void)
@@ -53,9 +56,7 @@ class Fiberpool(T, I)
       workers_channels.delete_at(index)
       pool_counter -= 1
 
-      if signal_exception.message
-        puts "ERROR: #{signal_exception.message}"
-      end
+      @exceptions << signal_exception if signal_exception.message
     end
   end
 end
