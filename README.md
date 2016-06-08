@@ -65,4 +65,4 @@ You can run the specs like this:
 ## Contributors
 
 - [Juan Wajnerman](https://github.com/waj) original implementation
-- [AkitaOnRails](https://github.com/akitaonrails]) creator of this shard, and maintainer
+- [AkitaOnRails](https://github.com/akitaonrails) creator of this shard, and maintainer
