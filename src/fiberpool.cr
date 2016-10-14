@@ -31,12 +31,12 @@ class Fiberpool(T, I)
       end
     end
 
-    signal_channel.receive_op
+    signal_channel.receive_select_action
   end
 
   def run(&block : T -> Void)
     pool_counter = 0
-    workers_channels = [] of Channel::ReceiveOp(Channel::Unbuffered(Exception), Exception)
+    workers_channels = [] of Channel::ReceiveAction(Channel::Unbuffered(Exception))
     queue = @queue.each
     more_pools = true
 
@@ -56,7 +56,7 @@ class Fiberpool(T, I)
       workers_channels.delete_at(index)
       pool_counter -= 1
 
-      @exceptions << signal_exception if signal_exception.message
+      @exceptions << signal_exception if signal_exception && signal_exception.message
     end
   end
 end
