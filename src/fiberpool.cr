@@ -19,7 +19,7 @@ class Fiberpool(T, I)
   end
 
   private def worker(item : T, &block : T -> Void)
-    signal_channel = Channel::Unbuffered(Exception).new
+    signal_channel = Channel(Exception).new
 
     spawn do
       begin
@@ -36,7 +36,7 @@ class Fiberpool(T, I)
 
   def run(&block : T -> Void)
     pool_counter = 0
-    workers_channels = [] of Channel::ReceiveAction(Channel::Unbuffered(Exception))
+    workers_channels = [] of Channel::ReceiveAction(Exception)
     queue = @queue.each
     more_pools = true
 
@@ -56,7 +56,7 @@ class Fiberpool(T, I)
       workers_channels.delete_at(index)
       pool_counter -= 1
 
-      @exceptions << signal_exception if signal_exception && signal_exception.message
+      @exceptions << signal_exception if !signal_exception.is_a?(Channel::NotReady) && signal_exception.message
     end
   end
 end
