@@ -36,7 +36,7 @@ class Fiberpool(T, I)
 
   def run(&block : T -> Void)
     pool_counter = 0
-    workers_channels = [] of Channel::ReceiveAction(Exception)
+    workers_channels = [] of Channel::StrictReceiveAction(Exception)
     queue = @queue.each
     more_pools = true
 
