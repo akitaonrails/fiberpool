@@ -1,8 +1,23 @@
 require "./fiberpool/*"
 
+class Worker(T)
+  def initialize(signal_channel : Channel(Tuple(Worker, Exception)), item : T, &block : T -> Void)
+    spawn do
+      begin
+        block.call(item)
+      rescue ex
+        signal_channel.send({self, ex})
+      else
+        signal_channel.send({self, Exception.new(nil)})
+      end
+    end
+  end
+end
+
 class Fiberpool(T, I)
   @queue : I
   @pool_size : Int32
+  @signal_channel : Channel(Tuple(Worker(T), Exception))
 
   getter exceptions : Array(Exception)
 
@@ -16,6 +31,7 @@ class Fiberpool(T, I)
 
   protected def initialize(@queue, @pool_size, dummy)
     @exceptions = [] of Exception
+    @signal_channel = Channel(Tuple(Worker(T), Exception)).new
   end
 
   private def worker(item : T, &block : T -> Void)
@@ -36,27 +52,28 @@ class Fiberpool(T, I)
 
   def run(&block : T -> Void)
     pool_counter = 0
-    workers_channels = [] of Channel::StrictReceiveAction(Exception)
+    workers = [] of Worker(T)
     queue = @queue.each
     more_pools = true
 
     loop do
-      break if !more_pools && workers_channels.empty?
+      break if !more_pools && workers.empty?
       while pool_counter < @pool_size && more_pools
         item = queue.next
+
         if item.is_a?(Iterator::Stop)
           more_pools = false
           break
         end
         pool_counter += 1
-        workers_channels << worker(item, &block)
+        workers << Worker.new(@signal_channel, item, &block)
       end
 
-      index, signal_exception = Channel.select(workers_channels)
-      workers_channels.delete_at(index)
+      signal_exception = @signal_channel.receive
+      workers.delete(signal_exception[0])
       pool_counter -= 1
 
-      @exceptions << signal_exception if !signal_exception.is_a?(Channel::NotReady) && signal_exception.message
+      @exceptions << signal_exception[1] if !signal_exception[1].is_a?(Channel::NotReady) && signal_exception[1].message
     end
   end
 end
